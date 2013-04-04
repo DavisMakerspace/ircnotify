@@ -11,28 +11,29 @@ if not File.exists? config_file
   puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
   exit
 end
-config = YAML.load_file config_file
+$config = YAML.load_file config_file
+$ver=%x{git describe}.strip
 
 bot = Cinch::Bot.new do
   configure do |c|
     c.user = "ircnotify"
     c.realname = "ircnotify"
-    c.nick = config['irc']['nick']
-    c.server = config['irc']['server']
-    c.port = config['irc']['port']
-    c.channels = config['irc']['channels']
+    c.nick = $config['irc']['nick']
+    c.server = $config['irc']['server']
+    c.port = $config['irc']['port']
+    c.channels = $config['irc']['channels']
   end
   helpers do
     def respond(msg, query)
-      msg.reply "#{msg.user.nick}: This is ircnotify bot reporting input to UNIX socket #{@unixserver.path}"
+      msg.reply "ircnotify #{$ver} listening on #{@unixserver.path}"
     end
   end
   on :connect do
     self.bot.on :channel, /^#{self.bot.nick}(?:[:, ] *(.*)|$)/ do |m, q|
       respond m, q
     end
-    if File.socket?(config['socket']['path']) then File.delete(config['socket']['path']) end
-    @unixserver = UNIXServer.new(config['socket']['path'])
+    if File.socket?($config['socket']['path']) then File.delete($config['socket']['path']) end
+    @unixserver = UNIXServer.new($config['socket']['path'])
     while a = @unixserver.accept do
       Thread.new do
         a.each {|line| self.bot.channels.each {|c| c.send "[#{Etc.getpwuid(a.getpeereid[0]).name}] #{line}" } }
@@ -42,7 +43,7 @@ bot = Cinch::Bot.new do
   on :disconnect do
     @unixserver.shutdown
     @unixserver = nil
-    File.delete(config['socket']['path'])
+    File.delete($config['socket']['path'])
   end
   on :private do |m|
     if m.command == "PRIVMSG" && m.user
