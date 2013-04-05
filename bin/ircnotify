@@ -39,7 +39,18 @@ module IRCNotify
       @unixserver = UNIXServer.new(IRCNotifyConfig::Socket::PATH)
       while a = @unixserver.accept do
         Thread.new do
-          a.each {|line| self.bot.channels.each {|c| c.send "[#{Etc.getpwuid(a.getpeereid[0]).name}] #{line}" } }
+          name = Etc.getpwuid(a.getpeereid[0]).name
+          tag = name
+          a.each do |line|
+            line.strip!
+            c = line.slice! /^!/
+            if c == "!" and not line.start_with? "!"
+              command, argstr = line.split(" ", 2)
+              if command == "tag" then tag = argstr end
+            else
+              self.bot.channels.each {|c| c.send "[#{tag}] #{line}" }
+            end
+          end
         end
       end
     end
