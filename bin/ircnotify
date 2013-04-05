@@ -7,7 +7,7 @@ require 'etc'
 module IRCNotify
   extend self
 
-  IRCNOTIFY_VERSION = %x{cd #{File.dirname($0)} && git describe --dirty=-modified}.strip
+  VERSION = %x{cd #{File.dirname($0)} && git describe --dirty=-modified}.strip
 
   config_file = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
   if not File.exists? config_file
@@ -28,7 +28,7 @@ module IRCNotify
     end
     helpers do
       def respond(msg, query)
-        msg.reply "ircnotify #{IRCNOTIFY_VERSION} listening on #{@unixserver.path}"
+        msg.reply "ircnotify #{VERSION} listening on #{@unixserver.path}"
       end
     end
     on :connect do
