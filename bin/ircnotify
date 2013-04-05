@@ -9,13 +9,14 @@ module IRCNotify
 
   VERSION = %x{cd #{File.dirname($0)} && git describe --dirty=-modified}.strip
 
-  config_file = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
-  if not File.exists? config_file
-    puts "Can't find config file #{config_file}"
+  config = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
+  if not File.exists? config
+    puts "Can't find config file #{config}"
     puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
     exit
   end
-  load config_file
+  load config
+  load File.join(File.dirname($0), "..", "share", "config.schema")
 
   @bot = Cinch::Bot.new do
     configure do |c|

@@ -1,0 +1,11 @@
+module IRCNotifyConfig
+  module IRC
+    SERVER ||= ""
+    PORT ||= 6667
+    NICK ||= "ircnotify"
+    CHANNELS ||= []
+  end
+  module Socket
+    PATH ||= "/run/ircnotify/#{IRC::NICK}"
+  end
+end
