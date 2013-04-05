@@ -1,55 +1,64 @@
 #!/usr/bin/env ruby
 
-require 'yaml'
 require 'cinch'
 require 'socket'
 require 'etc'
 
-config_file = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config.yml")
-if not File.exists? config_file
-  puts "Can't find config file #{config_file}"
-  puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
-  exit
-end
-$config = YAML.load_file config_file
-$ver=%x{git describe}.strip
+module IRCNotify
+  extend self
 
-bot = Cinch::Bot.new do
-  configure do |c|
-    c.user = "ircnotify"
-    c.realname = "ircnotify"
-    c.nick = $config['irc']['nick']
-    c.server = $config['irc']['server']
-    c.port = $config['irc']['port']
-    c.channels = $config['irc']['channels']
+  IRCNOTIFY_VERSION = %x{cd #{File.dirname($0)} && git describe --dirty=-modified}.strip
+
+  config_file = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
+  if not File.exists? config_file
+    puts "Can't find config file #{config_file}"
+    puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
+    exit
   end
-  helpers do
-    def respond(msg, query)
-      msg.reply "ircnotify #{$ver} listening on #{@unixserver.path}"
+  load config_file
+
+  @bot = Cinch::Bot.new do
+    configure do |c|
+      c.user = File.basename $0
+      c.realname = c.user
+      c.nick = IRCNotifyConfig::IRC::NICK
+      c.server = IRCNotifyConfig::IRC::SERVER
+      c.port = IRCNotifyConfig::IRC::PORT
+      c.channels = IRCNotifyConfig::IRC::CHANNELS
     end
-  end
-  on :connect do
-    self.bot.on :channel, /^#{self.bot.nick}(?:[:, ] *(.*)|$)/ do |m, q|
-      respond m, q
+    helpers do
+      def respond(msg, query)
+        msg.reply "ircnotify #{IRCNOTIFY_VERSION} listening on #{@unixserver.path}"
+      end
     end
-    if File.socket?($config['socket']['path']) then File.delete($config['socket']['path']) end
-    @unixserver = UNIXServer.new($config['socket']['path'])
-    while a = @unixserver.accept do
-      Thread.new do
-        a.each {|line| self.bot.channels.each {|c| c.send "[#{Etc.getpwuid(a.getpeereid[0]).name}] #{line}" } }
+    on :connect do
+      self.bot.on :channel, /^#{self.bot.nick}(?:[:, ] *(.*)|$)/ do |m, q|
+        respond m, q
+      end
+      if File.socket?(IRCNotifyConfig::Socket::PATH) then File.delete(IRCNotifyConfig::Socket::PATH) end
+      @unixserver = UNIXServer.new(IRCNotifyConfig::Socket::PATH)
+      while a = @unixserver.accept do
+        Thread.new do
+          a.each {|line| self.bot.channels.each {|c| c.send "[#{Etc.getpwuid(a.getpeereid[0]).name}] #{line}" } }
+        end
+      end
+    end
+    on :disconnect do
+      path = @unixserver.path
+      @unixserver.shutdown
+      @unixserver = nil
+      File.delete(path)
+    end
+    on :private do |m|
+      if m.command == "PRIVMSG" && m.user
+        respond m, m.message
       end
     end
   end
-  on :disconnect do
-    @unixserver.shutdown
-    @unixserver = nil
-    File.delete($config['socket']['path'])
-  end
-  on :private do |m|
-    if m.command == "PRIVMSG" && m.user
-      respond m, m.message
-    end
+
+  def start
+    @bot.start
   end
 end
 
-bot.start
+IRCNotify.start

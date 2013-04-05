@@ -1,0 +1,11 @@
+module IRCNotifyConfig
+  module IRC
+    SERVER = "irc.freenode.org"
+    PORT = 6667
+    NICK = "dmsnotify"
+    CHANNELS = ["#davismakerspace"]
+  end
+  module Socket
+    PATH = "/run/ircnotify/#{IRC::NICK}"
+  end
+end
