@@ -2,6 +2,7 @@
 
 require 'cinch'
 require 'socket'
+require 'json'
 require 'etc'
 
 module IRCNotify
@@ -40,17 +41,24 @@ module IRCNotify
       @unixserver = UNIXServer.new(IRCNotifyConfig::Socket::PATH)
       while a = @unixserver.accept do
         Thread.new do
-          name = Etc.getpwuid(a.getpeereid[0]).name
-          tag = name
+          eid = Etc.getpwuid(a.getpeereid[0]).name
+          id = eid
           a.each do |line|
-            line.strip!
-            c = line.slice! /^!/
-            if c == "!" and not line.start_with? "!"
-              command, argstr = line.split(" ", 2)
-              if command == "tag" then tag = argstr end
+            msg = nil
+            if line.start_with? "{"
+              begin
+                cmd = JSON::parse(line)
+              rescue JSON::ParserError => error
+                debug "Could not parse presumed JSON string: #{line}"
+                debug "got error #{error}"
+                cmd = {}
+              end
+              if cmd['id'] then id = cmd['id'] end
+              if cmd['msg'] then msg = cmd['msg'] end
             else
-              self.bot.channels.each {|c| c.send "[#{tag}] #{line}" }
+              msg = line.strip
             end
+            if msg then self.bot.channels.each {|channel| channel.send "[#{id}] #{msg}"} end
           end
         end
       end
