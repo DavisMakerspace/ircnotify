@@ -20,16 +20,46 @@ module IRCNotify
   load config
   load File.join(File.dirname($0), "..", "share", "config.schema")
 
+  class Server
+    def initialize
+      if File.socket?(IRCNotifyConfig::Server::PATH) then File.delete(IRCNotifyConfig::Server::PATH) end
+      @server = UNIXServer.new(IRCNotifyConfig::Server::PATH)
+      @clients = []
+    end
+    def start 
+      while socket = @server.accept do
+        client = IRCNotify::Client.new socket
+        Thread.new do
+          @clients << client
+          client.start_read
+          @clients.delete client
+        end
+      end
+    end
+    def stop
+      path = @server.path
+      @server.shutdown
+      @server = nil
+      File.delete(path)
+    end
+    def write msg
+      @clients.each do |c| c.write msg end
+    end
+    def path
+      @server.path
+    end
+  end
+
   class Client
     def initialize(socket)
       @socket = socket
       @eid = Etc.getpwuid(@socket.getpeereid[0]).name
       @id = @eid
+      IRCNotify.info "New connection #{@socket} by #{@eid}"
     end
-    def start
-      IRCNotify.info "New connection #{@socket}"
+    def start_read
       @socket.each do |line|
-        IRCNotify.debug "Server got: #{line.strip}"
+        IRCNotify.debug "Client #{@socket} got: #{line.strip}"
         msg = nil
         if line.start_with? "{"
           begin
@@ -47,29 +77,26 @@ module IRCNotify
         if msg then IRCNotify.irc_send @id, msg end
       end
       IRCNotify.info "Ending connection #{@socket}"
+      @socket = nil
+    end
+    def write msg
+      @socket.write msg + "\r\n"
     end
   end
 
-  def server_loop
-    if File.socket?(IRCNotifyConfig::Server::PATH) then File.delete(IRCNotifyConfig::Server::PATH) end
-    @server = UNIXServer.new(IRCNotifyConfig::Server::PATH)
-    while socket = @server.accept do
-      client = IRCNotify::Client.new socket
-      Thread.new do
-        client.start
-      end
-    end
+  def server_start
+    @server = Server.new
+    @server.start
   end
-
-  def server_end
-    path = @server.path
-    @server.shutdown
+  
+  def server_stop
+    @server.stop
     @server = nil
-    File.delete(path)
   end
 
   def irc_receive(msg, query)
     msg.reply "ircnotify #{VERSION} listening on #{@server.path}"
+    @server.write query
   end
 
   def irc_send(id, msg)
@@ -86,13 +113,13 @@ module IRCNotify
       c.channels = IRCNotifyConfig::IRC::CHANNELS
     end
     on :connect do
-      self.bot.on :channel, /^#{self.bot.nick}(?:[:, ] *(.*)|$)/ do |m, q|
-        IRCNotify.irc_receive m, q
+      self.bot.on :channel, /^#{self.bot.nick}(?:[:, ] *(.*)|$)/ do |m, cmd|
+        IRCNotify.irc_receive m, cmd
       end
-      IRCNotify.server_loop
+      IRCNotify.server_start
     end
     on :disconnect do
-      IRCNotify.server_end
+      IRCNotify.server_stop
     end
     on :private do |m|
       if m.command == "PRIVMSG" && m.user
