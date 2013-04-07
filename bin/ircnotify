@@ -22,7 +22,7 @@ module IRCNotify
 
   def server_loop
     if File.socket?(IRCNotifyConfig::Server::PATH) then File.delete(IRCNotifyConfig::Server::PATH) end
-    @server =  UNIXServer.new(IRCNotifyConfig::Server::PATH)
+    @server = UNIXServer.new(IRCNotifyConfig::Server::PATH)
     while a = @server.accept do
       Thread.new do
         @bot.info "New connection #{a}"
@@ -35,8 +35,8 @@ module IRCNotify
             begin
               cmd = JSON::parse(line)
             rescue JSON::ParserError => error
-              debug "Could not parse presumed JSON string: #{line}"
-              debug "got error #{error}"
+              @bot.debug "Could not parse presumed JSON string: #{line}"
+              @bot.debug "got error #{error}"
               cmd = {}
             end
             if cmd['id'] then id = cmd['id'] end
