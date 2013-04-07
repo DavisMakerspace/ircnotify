@@ -8,7 +8,7 @@ require 'etc'
 module IRCNotify
   extend self
 
-  VERSION = %x{cd #{File.dirname($0)} && git describe --dirty=-modified}.strip
+  VERSION = %x{cd #{File.dirname $0} && git describe --dirty=-modified}.strip
   @server = nil
 
   config = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
@@ -22,8 +22,8 @@ module IRCNotify
 
   class Server
     def initialize
-      if File.socket?(IRCNotifyConfig::Server::PATH) then File.delete(IRCNotifyConfig::Server::PATH) end
-      @server = UNIXServer.new(IRCNotifyConfig::Server::PATH)
+      if File.socket? IRCNotifyConfig::Server::PATH then File.delete IRCNotifyConfig::Server::PATH end
+      @server = UNIXServer.new IRCNotifyConfig::Server::PATH
       @clients = []
     end
     def start 
@@ -40,7 +40,7 @@ module IRCNotify
       path = @server.path
       @server.shutdown
       @server = nil
-      File.delete(path)
+      File.delete path
     end
     def write msg
       @clients.each do |c| c.write msg end
@@ -63,7 +63,7 @@ module IRCNotify
         msg = nil
         if line.start_with? "{"
           begin
-            cmd = JSON::parse(line)
+            cmd = JSON::parse line
           rescue JSON::ParserError => error
             IRCNotify.debug "Could not parse presumed JSON string: #{line}"
             IRCNotify.debug "got error #{error}"
