@@ -101,8 +101,11 @@ module IRCNotify
   end
 
   def irc_receive(msg, query)
-    msg.reply "ircnotify #{VERSION} listening on #{@server.path}"
-    @server.write query
+    if query == ""
+      msg.reply "ircnotify #{VERSION} listening on #{@server.path}"
+    else
+      @server.write query
+    end
   end
 
   def irc_send(id, msg)
