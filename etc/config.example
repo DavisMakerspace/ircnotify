@@ -4,7 +4,7 @@ module IRCNotifyConfig
     NICK = "mynotifer"
     CHANNELS = ["#ircnotify"]
   end
-  module Socket
+  module Server
     PATH = "/run/ircnotify/#{IRC::NICK}"
   end
 end
