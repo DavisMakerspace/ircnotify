@@ -20,33 +20,43 @@ module IRCNotify
   load config
   load File.join(File.dirname($0), "..", "share", "config.schema")
 
+  class Client
+    def initialize(socket)
+      @socket = socket
+      @eid = Etc.getpwuid(@socket.getpeereid[0]).name
+      @id = @eid
+    end
+    def start
+      IRCNotify.info "New connection #{@socket}"
+      @socket.each do |line|
+        IRCNotify.debug "Server got: #{line.strip}"
+        msg = nil
+        if line.start_with? "{"
+          begin
+            cmd = JSON::parse(line)
+          rescue JSON::ParserError => error
+            IRCNotify.debug "Could not parse presumed JSON string: #{line}"
+            IRCNotify.debug "got error #{error}"
+            cmd = {}
+          end
+          if cmd['id'] then @id = cmd['id'] end
+          if cmd['msg'] then msg = cmd['msg'] end
+        else
+          msg = line.strip
+        end
+        if msg then IRCNotify.irc_send @id, msg end
+      end
+      IRCNotify.info "Ending connection #{@socket}"
+    end
+  end
+
   def server_loop
     if File.socket?(IRCNotifyConfig::Server::PATH) then File.delete(IRCNotifyConfig::Server::PATH) end
     @server = UNIXServer.new(IRCNotifyConfig::Server::PATH)
-    while a = @server.accept do
+    while socket = @server.accept do
+      client = IRCNotify::Client.new socket
       Thread.new do
-        @bot.info "New connection #{a}"
-        eid = Etc.getpwuid(a.getpeereid[0]).name
-        id = eid
-        a.each do |line|
-          @bot.debug "Server got: #{line.strip}"
-          msg = nil
-          if line.start_with? "{"
-            begin
-              cmd = JSON::parse(line)
-            rescue JSON::ParserError => error
-              @bot.debug "Could not parse presumed JSON string: #{line}"
-              @bot.debug "got error #{error}"
-              cmd = {}
-            end
-            if cmd['id'] then id = cmd['id'] end
-            if cmd['msg'] then msg = cmd['msg'] end
-          else
-            msg = line.strip
-          end
-          if msg then @bot.channels.each {|channel| channel.send "[#{id}] #{msg}"} end
-        end
-        @bot.info "Ending connection #{a}"
+        client.start
       end
     end
   end
@@ -60,6 +70,10 @@ module IRCNotify
 
   def irc_receive(msg, query)
     msg.reply "ircnotify #{VERSION} listening on #{@server.path}"
+  end
+
+  def irc_send(id, msg)
+    @bot.channels.each {|channel| channel.send "[#{id}] #{msg}"}
   end
 
   @bot = Cinch::Bot.new do
@@ -89,6 +103,12 @@ module IRCNotify
 
   def start
     @bot.start
+  end
+  def info(msg)
+    @bot.info msg
+  end
+  def debug(msg)
+    @bot.debug msg
   end
 end
 
