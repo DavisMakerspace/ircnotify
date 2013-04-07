@@ -121,6 +121,11 @@ module IRCNotify
     on :disconnect do
       IRCNotify.server_stop
     end
+    if IRCNotifyConfig::IRC::CMDPREFIX
+      on :channel, /^#{IRCNotifyConfig::IRC::CMDPREFIX} *(.*)/ do |m, cmd|
+        IRCNotify.irc_receive m, cmd
+      end
+    end
     on :private do |m|
       if m.command == "PRIVMSG" && m.user
         IRCNotify.irc_receive m, m.message

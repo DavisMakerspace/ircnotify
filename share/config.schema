@@ -4,6 +4,7 @@ module IRCNotifyConfig
     PORT ||= 6667
     NICK ||= "ircnotify"
     CHANNELS ||= []
+    CMDPREFIX ||= "!"
   end
   module Server
     PATH ||= "/run/ircnotify/#{IRC::NICK}"
