@@ -60,27 +60,29 @@ module IRCNotify
     def start_read
       @socket.each do |line|
         IRCNotify.debug "Client #{@socket} got: #{line.strip}"
-        msg = nil
+        cmds = {}
         if line.start_with? "{"
           begin
-            cmd = JSON::parse line
+            cmds = JSON::parse line
           rescue JSON::ParserError => error
             IRCNotify.debug "Could not parse presumed JSON string: #{line}"
             IRCNotify.debug "got error #{error}"
-            cmd = {}
+            cmds = {}
           end
-          if cmd['id'] then @id = cmd['id'] end
-          if cmd['msg'] then msg = cmd['msg'] end
         else
-          msg = line.strip
+          cmds['msg'] = line.strip
         end
-        if msg then IRCNotify.irc_send @id, msg end
+        handle_commands cmds
       end
       IRCNotify.info "Ending connection #{@socket}"
       @socket = nil
     end
     def write msg
       @socket.write msg + "\r\n"
+    end
+    def handle_commands(cmds)
+      if cmds['id'] then @id = cmds['id'] end
+      if cmds['msg'] then IRCNotify.irc_send @id, cmds['msg'] end
     end
   end
 
