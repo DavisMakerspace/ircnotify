@@ -9,6 +9,7 @@ module IRCNotify
   extend self
 
   VERSION = %x{cd #{File.dirname($0)} && git describe --dirty=-modified}.strip
+  @server = nil
 
   config = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
   if not File.exists? config
@@ -19,6 +20,48 @@ module IRCNotify
   load config
   load File.join(File.dirname($0), "..", "share", "config.schema")
 
+  def server_loop
+    if File.socket?(IRCNotifyConfig::Server::PATH) then File.delete(IRCNotifyConfig::Server::PATH) end
+    @server =  UNIXServer.new(IRCNotifyConfig::Server::PATH)
+    while a = @server.accept do
+      Thread.new do
+        @bot.info "New connection #{a}"
+        eid = Etc.getpwuid(a.getpeereid[0]).name
+        id = eid
+        a.each do |line|
+          @bot.debug "Server got: #{line.strip}"
+          msg = nil
+          if line.start_with? "{"
+            begin
+              cmd = JSON::parse(line)
+            rescue JSON::ParserError => error
+              debug "Could not parse presumed JSON string: #{line}"
+              debug "got error #{error}"
+              cmd = {}
+            end
+            if cmd['id'] then id = cmd['id'] end
+            if cmd['msg'] then msg = cmd['msg'] end
+          else
+            msg = line.strip
+          end
+          if msg then @bot.channels.each {|channel| channel.send "[#{id}] #{msg}"} end
+        end
+        @bot.info "Ending connection #{a}"
+      end
+    end
+  end
+
+  def server_end
+    path = @server.path
+    @server.shutdown
+    @server = nil
+    File.delete(path)
+  end
+
+  def irc_receive(msg, query)
+    msg.reply "ircnotify #{VERSION} listening on #{@server.path}"
+  end
+
   @bot = Cinch::Bot.new do
     configure do |c|
       c.user = File.basename $0
@@ -28,50 +71,18 @@ module IRCNotify
       c.port = IRCNotifyConfig::IRC::PORT
       c.channels = IRCNotifyConfig::IRC::CHANNELS
     end
-    helpers do
-      def respond(msg, query)
-        msg.reply "ircnotify #{VERSION} listening on #{@unixserver.path}"
-      end
-    end
     on :connect do
       self.bot.on :channel, /^#{self.bot.nick}(?:[:, ] *(.*)|$)/ do |m, q|
-        respond m, q
+        IRCNotify.irc_receive m, q
       end
-      if File.socket?(IRCNotifyConfig::Socket::PATH) then File.delete(IRCNotifyConfig::Socket::PATH) end
-      @unixserver = UNIXServer.new(IRCNotifyConfig::Socket::PATH)
-      while a = @unixserver.accept do
-        Thread.new do
-          eid = Etc.getpwuid(a.getpeereid[0]).name
-          id = eid
-          a.each do |line|
-            msg = nil
-            if line.start_with? "{"
-              begin
-                cmd = JSON::parse(line)
-              rescue JSON::ParserError => error
-                debug "Could not parse presumed JSON string: #{line}"
-                debug "got error #{error}"
-                cmd = {}
-              end
-              if cmd['id'] then id = cmd['id'] end
-              if cmd['msg'] then msg = cmd['msg'] end
-            else
-              msg = line.strip
-            end
-            if msg then self.bot.channels.each {|channel| channel.send "[#{id}] #{msg}"} end
-          end
-        end
-      end
+      IRCNotify.server_loop
     end
     on :disconnect do
-      path = @unixserver.path
-      @unixserver.shutdown
-      @unixserver = nil
-      File.delete(path)
+      IRCNotify.server_end
     end
     on :private do |m|
       if m.command == "PRIVMSG" && m.user
-        respond m, m.message
+        IRCNotify.irc_receive m, m.message
       end
     end
   end
