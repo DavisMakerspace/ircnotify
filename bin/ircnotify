@@ -9,6 +9,7 @@ module IRCNotify
   extend self
 
   VERSION = %x{cd #{File.dirname $0} && git describe --dirty=-modified}.strip
+  HOST = Socket.gethostbyname(Socket.gethostname).first
   @server = nil
 
   config = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
@@ -102,7 +103,7 @@ module IRCNotify
 
   def irc_receive(msg, query)
     if query == ""
-      msg.reply "ircnotify #{VERSION} listening on #{@server.path}"
+      msg.reply "ircnotify #{VERSION} listening on #{HOST}:#{@server.path}"
     else
       @server.write query
     end
