@@ -87,13 +87,17 @@ module IRCNotify
   end
 
   def server_start
-    @server = Server.new
-    @server.start
+    if not @server
+      @server = Server.new
+      @server.start
+    end
   end
   
   def server_stop
-    @server.stop
-    @server = nil
+    if @server
+      @server.stop
+      @server = nil
+    end
   end
 
   def irc_receive(msg, query)
