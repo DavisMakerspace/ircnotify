@@ -64,11 +64,11 @@ module IRCNotify
   class Client
     def initialize(socket)
       @socket = socket
-      @eid = Etc.getpwuid(@socket.getpeereid[0]).name
-      @id = @eid
+      @peername = Etc.getpwuid(@socket.getpeereid[0]).name
+      @name = @peername
       @triggers = []
       @targets = nil
-      IRCNotify.info "New connection #{@socket} by #{@eid}"
+      IRCNotify.info "New connection #{@socket} by #{@peername}"
     end
     def start_read
       @socket.each do |line|
@@ -103,12 +103,11 @@ module IRCNotify
       end
     end
     def handle_commands(cmds)
-      @id = cmds['set_id'].to_s if cmds['set_id']
-      id = cmds['id'] || @id; id = id.to_s
+      @name = cmds['set_name'].to_s if cmds['set_name']
       if cmds['set_targets'] then @targets = Array.try_convert cmds['set_targets'] || nil end
       targets = Array.try_convert cmds['targets'] || @targets
       if cmds['set_triggers'] then @triggers = Array.try_convert cmds['set_triggers'] || [] end
-      if cmds['send'] then IRCNotify.irc_send targets, id, cmds['send'] end
+      if cmds['send'] then IRCNotify.irc_send targets, @name, cmds['send'] end
     end
   end
 
@@ -132,14 +131,14 @@ module IRCNotify
     @server.send msg.target, msg.user, cmd
   end
 
-  def irc_send(target_ids, id, msg)
+  def irc_send(target_ids, tag, msg)
     if target_ids
       targets = target_ids.map do |tid| @known_irc_targets[tid] end
       targets.compact!
     else
       targets = @bot.channels
     end
-    targets.each {|channel| channel.send "[#{id}] #{msg}"}
+    targets.each {|channel| channel.send "[#{tag}] #{msg}"}
   end
 
   def get_irc_target(id)
