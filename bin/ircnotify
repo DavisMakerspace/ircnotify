@@ -11,6 +11,7 @@ module IRCNotify
   VERSION = %x{cd #{File.dirname $0} && git describe --dirty=-modified}.strip
   HOST = Socket.gethostbyname(Socket.gethostname).first
   @server = nil
+  @known_irc_targets = {}
 
   config = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
   if not File.exists? config
@@ -32,7 +33,11 @@ module IRCNotify
         client = IRCNotify::Client.new socket
         Thread.new do
           @clients << client
-          client.start_read
+          begin
+            client.start_read
+          rescue StandardError => error
+            IRCNotify.debug "Client error: #{error}"
+          end
           @clients.delete client
         end
       end
@@ -44,9 +49,9 @@ module IRCNotify
       File.delete path
     end
     def send(at, from, cmd)
-      trigger, args = cmd.split ' ', 2
+      trigger, msg = cmd.split ' ', 2
       if trigger
-        @clients.each do |c| c.send from, trigger, args end
+        @clients.each do |c| c.send at, from, trigger, msg end
       else
         at.msg "ircnotify #{VERSION} listening on #{HOST}:#{@server.path}"
       end
@@ -62,6 +67,7 @@ module IRCNotify
       @eid = Etc.getpwuid(@socket.getpeereid[0]).name
       @id = @eid
       @triggers = []
+      @targets = nil
       IRCNotify.info "New connection #{@socket} by #{@eid}"
     end
     def start_read
@@ -77,20 +83,32 @@ module IRCNotify
             cmds = {}
           end
         else
-          cmds['msg'] = line.strip
+          cmds['send'] = line.strip
         end
         handle_commands cmds
       end
       IRCNotify.info "Ending connection #{@socket}"
       @socket = nil
     end
-    def send from, trigger, msg
-      if @triggers.include? trigger then @socket.write({'from'=>from.name, 'trigger'=>trigger, 'msg'=>msg}.to_json + "\r\n") end
+    def send at, from, trigger, msg
+      if @triggers.include? trigger
+        data = {
+          at: at.object_id,
+          at_name: at.name,
+          from: from.object_id,
+          from_name: from.name,
+          trigger: trigger,
+          msg: msg}
+        @socket.write(data.to_json + "\r\n")
+      end
     end
     def handle_commands(cmds)
-      if cmds['id'] then @id = cmds['id'] end
-      if cmds['triggers'] then @triggers = Array.try_convert cmds['triggers'] || [] end
-      if cmds['msg'] then IRCNotify.irc_send @id, cmds['msg'] end
+      @id = cmds['set_id'].to_s if cmds['set_id']
+      id = cmds['id'] || @id; id = id.to_s
+      if cmds['set_targets'] then @targets = Array.try_convert cmds['set_targets'] || nil end
+      targets = Array.try_convert cmds['targets'] || @targets
+      if cmds['set_triggers'] then @triggers = Array.try_convert cmds['set_triggers'] || [] end
+      if cmds['send'] then IRCNotify.irc_send targets, id, cmds['send'] end
     end
   end
 
@@ -109,11 +127,23 @@ module IRCNotify
   end
 
   def irc_receive(msg, cmd)
+    @known_irc_targets[msg.target.object_id] = msg.target
+    @known_irc_targets[msg.user.object_id] = msg.user
     @server.send msg.target, msg.user, cmd
   end
 
-  def irc_send(id, msg)
-    @bot.channels.each {|channel| channel.send "[#{id}] #{msg}"}
+  def irc_send(target_ids, id, msg)
+    if target_ids
+      targets = target_ids.map do |tid| @known_irc_targets[tid] end
+      targets.compact!
+    else
+      targets = @bot.channels
+    end
+    targets.each {|channel| channel.send "[#{id}] #{msg}"}
+  end
+
+  def get_irc_target(id)
+    @known_irc_targets[id]
   end
 
   @bot = Cinch::Bot.new do
