@@ -43,8 +43,13 @@ module IRCNotify
       @server = nil
       File.delete path
     end
-    def write msg
-      @clients.each do |c| c.write msg end
+    def send(at, from, cmd)
+      trigger, args = cmd.split ' ', 2
+      if trigger
+        @clients.each do |c| c.send from, trigger, args end
+      else
+        at.msg "ircnotify #{VERSION} listening on #{HOST}:#{@server.path}"
+      end
     end
     def path
       @server.path
@@ -56,6 +61,7 @@ module IRCNotify
       @socket = socket
       @eid = Etc.getpwuid(@socket.getpeereid[0]).name
       @id = @eid
+      @triggers = []
       IRCNotify.info "New connection #{@socket} by #{@eid}"
     end
     def start_read
@@ -78,11 +84,12 @@ module IRCNotify
       IRCNotify.info "Ending connection #{@socket}"
       @socket = nil
     end
-    def write msg
-      @socket.write msg + "\r\n"
+    def send from, trigger, msg
+      if @triggers.include? trigger then @socket.write({'from'=>from.name, 'trigger'=>trigger, 'msg'=>msg}.to_json + "\r\n") end
     end
     def handle_commands(cmds)
       if cmds['id'] then @id = cmds['id'] end
+      if cmds['triggers'] then @triggers = Array.try_convert cmds['triggers'] || [] end
       if cmds['msg'] then IRCNotify.irc_send @id, cmds['msg'] end
     end
   end
@@ -101,12 +108,8 @@ module IRCNotify
     end
   end
 
-  def irc_receive(msg, query)
-    if query == ""
-      msg.reply "ircnotify #{VERSION} listening on #{HOST}:#{@server.path}"
-    else
-      @server.write query
-    end
+  def irc_receive(msg, cmd)
+    @server.send msg.target, msg.user, cmd
   end
 
   def irc_send(id, msg)
