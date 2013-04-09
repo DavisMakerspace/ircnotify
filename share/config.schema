@@ -5,6 +5,7 @@ module IRCNotifyConfig
     NICK ||= "ircnotify"
     CHANNELS ||= []
     CMDPREFIX ||= "!"
+    MSGFORMAT ||= "%{src} :: %{msg}"
   end
   module Server
     PATH ||= "/run/ircnotify/#{IRC::NICK}"

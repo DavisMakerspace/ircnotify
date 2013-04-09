@@ -8,6 +8,7 @@ require 'etc'
 module IRCNotify
   extend self
 
+  NAME = File.basename $0
   VERSION = %x{cd #{File.dirname $0} && git describe --dirty=-modified}.strip
   HOST = Socket.gethostbyname(Socket.gethostname).first
   @server = nil
@@ -53,7 +54,7 @@ module IRCNotify
       if trigger
         @clients.each do |c| c.send at, from, trigger, msg end
       else
-        at.msg "ircnotify #{VERSION} listening on #{HOST}:#{@server.path}"
+        IRCNotify.irc_send NAME, "#{VERSION} listening on #{HOST}:#{@server.path}"
       end
     end
     def path
@@ -107,7 +108,7 @@ module IRCNotify
       if cmds['set_targets'] then @targets = Array.try_convert cmds['set_targets'] || nil end
       targets = Array.try_convert cmds['targets'] || @targets
       if cmds['set_triggers'] then @triggers = Array.try_convert cmds['set_triggers'] || [] end
-      if cmds['send'] then IRCNotify.irc_send targets, @name, cmds['send'] end
+      if cmds['send'] then IRCNotify.irc_send @name, cmds['send'], targets end
     end
   end
 
@@ -131,14 +132,14 @@ module IRCNotify
     @server.send msg.target, msg.user, cmd
   end
 
-  def irc_send(target_ids, tag, msg)
+  def irc_send(src, msg, target_ids=nil)
     if target_ids
       targets = target_ids.map do |tid| @known_irc_targets[tid] end
       targets.compact!
     else
       targets = @bot.channels
     end
-    targets.each {|channel| channel.send "[#{tag}] #{msg}"}
+    targets.each {|channel| channel.send (IRCNotifyConfig::IRC::MSGFORMAT % {src: src, msg: msg})}
   end
 
   def get_irc_target(id)
