@@ -4,7 +4,7 @@ maxlen=0; [[ $1 == --maxlen=* ]] && maxlen=${1#--maxlen=} && shift
 log=$(git log --pretty=format:%an%n%s -C --numstat -1 "${1:-HEAD}")
 author=$(echo "$log" | sed '1p;d')
 subject=$(echo "$log" | sed '2p;d')
-line=":$author: $subject ::"
+line="$author :: $subject ::"
 while read f; do
   (($maxlen && ${#line}+${#f}>=$maxlen)) && line+=" ..." && break
   line+=" $f"
