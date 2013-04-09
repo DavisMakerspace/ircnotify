@@ -1,10 +1,8 @@
-module IRCNotifyConfig
-  module IRC
-    SERVER = "irc.freenode.org"
-    NICK = "mynotifer"
-    CHANNELS = ["#ircnotify"]
-  end
-  module Server
-    PATH = "/run/ircnotify/#{IRC::NICK}"
-  end
+module IRC
+  SERVER = "irc.freenode.org"
+  NICK = "mynotifer"
+  CHANNELS = ["#ircnotify"]
+end
+module Server
+  PATH = "/run/ircnotify/#{IRC::NICK}"
 end

@@ -1,13 +1,11 @@
-module IRCNotifyConfig
-  module IRC
-    SERVER ||= ""
-    PORT ||= 6667
-    NICK ||= "ircnotify"
-    CHANNELS ||= []
-    CMDPREFIX ||= "!"
-    MSGFORMAT ||= "%{src} :: %{msg}"
-  end
-  module Server
-    PATH ||= "/run/ircnotify/#{IRC::NICK}"
-  end
+module IRC
+  SERVER ||= ""
+  PORT ||= 6667
+  NICK ||= "ircnotify"
+  CHANNELS ||= []
+  CMDPREFIX ||= "!"
+  MSGFORMAT ||= "%{src} :: %{msg}"
+end
+module Server
+  PATH ||= "/run/ircnotify/#{IRC::NICK}"
 end

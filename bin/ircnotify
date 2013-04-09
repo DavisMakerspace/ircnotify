@@ -18,14 +18,15 @@ module IRCNotify
     STDERR.puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
     exit
   end
-  load config
-  load File.join(File.dirname($0), "..", "share", "config.schema")
+  config_wrapper = "module Config\n%s\nend"
+  module_eval config_wrapper % File.read(config), File.realpath(config), 0
+  module_eval config_wrapper % File.read(File.join(File.dirname($0), "..", "share", "config.schema"))
 
   class Server
     def initialize bridge
       @bridge = bridge
-      if File.socket? IRCNotifyConfig::Server::PATH then File.delete IRCNotifyConfig::Server::PATH end
-      @unix_server = UNIXServer.new IRCNotifyConfig::Server::PATH
+      if File.socket? Config::Server::PATH then File.delete Config::Server::PATH end
+      @unix_server = UNIXServer.new Config::Server::PATH
       @clients = []
     end
     def start 
@@ -117,15 +118,15 @@ module IRCNotify
       @bot.configure do |c|
         c.user = File.basename $0
         c.realname = c.user
-        c.nick = IRCNotifyConfig::IRC::NICK
-        c.server = IRCNotifyConfig::IRC::SERVER
-        c.port = IRCNotifyConfig::IRC::PORT
-        c.channels = IRCNotifyConfig::IRC::CHANNELS
+        c.nick = Config::IRC::NICK
+        c.server = Config::IRC::SERVER
+        c.port = Config::IRC::PORT
+        c.channels = Config::IRC::CHANNELS
       end
       @bot.on :connect, //, self do |m, irc| irc.connected end
       @bot.on :private, //, self do |m, irc| if m.command == "PRIVMSG" then irc.received m, m.message end end
-      if IRCNotifyConfig::IRC::CMDPREFIX
-        @bot.on :channel, /^#{IRCNotifyConfig::IRC::CMDPREFIX} *(.*)/, self do |m, irc, cmd| irc.received m, cmd end
+      if Config::IRC::CMDPREFIX
+        @bot.on :channel, /^#{Config::IRC::CMDPREFIX} *(.*)/, self do |m, irc, cmd| irc.received m, cmd end
       end
     end
     def connected
@@ -143,7 +144,7 @@ module IRCNotify
       else
         targets = @bot.channels
       end
-      targets.each {|channel| channel.send (IRCNotifyConfig::IRC::MSGFORMAT % {src: src, msg: msg})}
+      targets.each {|channel| channel.send (Config::IRC::MSGFORMAT % {src: src, msg: msg})}
     end
     def get_target id
       @known_targets[id]
