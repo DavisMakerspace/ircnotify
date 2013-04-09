@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+require 'json'
+def convert(data, namespace)
+  name = namespace.join '_'
+  if data.is_a? Hash
+    puts "declare -A #{name}"
+    data.each do |key, value|
+      v = convert value, namespace + [key.gsub(/[^a-zA-Z0-9]/, '')]
+      puts "#{name}[#{key}]=#{v}"
+    end
+    value = data.to_json.dump
+  elsif data.is_a? Array
+    values = []
+    data.each do |value|
+      v = convert value, namespace + [values.size.to_s]
+      values << v
+    end
+    puts "#{name}=(#{values.join ' '})"
+    value = data.to_json.dump
+  else
+    value = data.to_s.dump
+    puts "#{name}=#{value}"
+  end
+  value
+end
+if name = ARGV.shift
+  puts "unset #{name} \"${!#{name}_@}\""
+  data = JSON.parse STDIN.read
+  while key = ARGV.shift
+    if data.is_a? Hash
+      data = data[key]
+    elsif data.is_a? Array
+      data = data[key.to_i]
+    else
+      data = nil
+    end
+  end
+  convert data, [name]
+else
+  STDERR.puts "Usage: #{File.basename $0} <name> [key] [...]"
+end
