@@ -15,8 +15,8 @@ module IRCNotify
 
   config = ARGV.shift || File.join(File.dirname($0), "..", "etc", "config")
   if not File.exists? config
-    puts "Can't find config file #{config}"
-    puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
+    STDERR.puts "Can't find config file #{config}"
+    STDERR.puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
     exit
   end
   load config
