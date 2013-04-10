@@ -7,8 +7,8 @@ module IRCNotify
       @server = Server.new self
       @irc = IRC.new self
     end
-    def server_send target, user, cmd
-      @server.send target, user, cmd
+    def server_send at, from, cmd
+      @server.send at, from, cmd
     end
     def irc_send src, msg, target_ids=nil
       @irc.send src, msg, target_ids
