@@ -46,9 +46,9 @@ module IRCNotify
     end
     def handle_commands cmds
       @name = cmds['set_name'].to_s if cmds['set_name']
-      if cmds['set_targets'] then @targets = Array.try_convert cmds['set_targets'] || nil end
-      targets = Array.try_convert cmds['targets'] || @targets
-      if cmds['set_triggers'] then @triggers = Array.try_convert cmds['set_triggers'] || [] end
+      @targets = Array(cmds['set_targets']) if cmds['set_targets']
+      targets = cmds['targets'] ? Array(cmds['targets']) : @targets
+      @triggers = Array(cmds['set_triggers']) if cmds['set_triggers']
       if cmds['send'] then @bridge.irc_send @name, cmds['send'], targets end
     end
   end
