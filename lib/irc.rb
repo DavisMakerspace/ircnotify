@@ -30,12 +30,13 @@ module IRCNotify
     end
     def send src, msg, target_ids
       if target_ids
-        targets = target_ids.map do |tid| @known_targets[tid] end
-        targets.compact!
+        targets = target_ids.map {|tid| @known_targets[tid] || @bot.user_list.find(tid) || @bot.channel_list.find(tid)}
+        targets.uniq!
+        targets.keep_if {|t| t && (@bot.channels.index(t) || @bot.channels.index {|c| c.has_user?(t)})}
       else
         targets = @bot.channels
       end
-      targets.each {|channel| channel.send (Config::IRC::MSGFORMAT % {src: src, msg: msg})}
+      targets.each {|t| t.send (Config::IRC::MSGFORMAT % {src: src, msg: msg})}
     end
     def get_target id
       @known_targets[id]
