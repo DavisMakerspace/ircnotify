@@ -36,7 +36,7 @@ module IRCNotify
       else
         targets = @bot.channels
       end
-      targets.each {|t| t.send (Config::IRC::MSGFORMAT % {src: src, msg: msg})}
+      Array(msg).each {|m| targets.each {|t| t.send (Config::IRC::MSGFORMAT % {src: src, msg: m})}}
     end
     def get_target id
       @known_targets[id]
