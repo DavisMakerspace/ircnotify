@@ -17,5 +17,5 @@ cmds.each do |key, value|
   cmds[key] = nil if value.size == 0
   cmds[key] = value[0] if value.size == 1
 end
-cmds = Array(cmds[nil]) if cmds.size == 1
+cmds = Array(cmds[nil]) if (cmds[nil] && cmds.size == 1)
 puts cmds.to_json
