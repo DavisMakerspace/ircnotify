@@ -23,11 +23,12 @@ It might get annoying typing out json, so if you are going to be using the shell
 Using a coproc, you could also communicate the other way from the irc channel to the outside world.  The following will register for the trigger `!test` (assuming the default ircnotify trigger prefix `!`), and report on stdout each trigger, and reply via the bot to each trigger:
 
     ( coproc fds { socat - unix-connect:$SOCKET;}
-      opts2json --set-triggers test >&${fds[1]}
-      while read -ru ${fds[0]} line; do
-        eval $(echo "$line" | json2bash msg)
+      in=${fds[0]}; out=${fds[1]}
+      opts2json --set-triggers test >&$out
+      while read -ru $in line; do
+        eval $(json2bash msg <<<"$line")
         echo "$msg_from_name said: $msg_body"
-        echo "$msg_from_name tested" >&${fds[1]}
+        echo "$msg_from_name tested" >&$out
       done
     )
 
