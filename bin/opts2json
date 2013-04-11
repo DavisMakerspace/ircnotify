@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+require 'json'
+cmds={}
+cmd=nil
+ARGV.each do |arg|
+  if arg.start_with? '--'
+    cmd=arg[2..-1].tr! '-','_'
+  else
+    j = JSON.parse arg rescue nil
+    arg = j.is_a?(Hash) ? j : (Integer(arg) rescue nil || Float(arg) rescue nil || arg)
+    if cmds[cmd]
+      cmds[cmd] << arg
+    else
+      cmds[cmd] = [arg]
+    end
+  end
+end
+cmds.each do |key, value|
+  if value.size == 1
+    cmds[key] = value[0]
+  end
+end
+puts cmds.to_json
