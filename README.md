@@ -2,7 +2,7 @@
 
 `ircnotify` is a basic daemon for communicating between an IRC bot and the outside world via a socket.
 
-The following assume that SOCKET=/path/to/ircnotify/socket
+The following assume that `SOCKET=/path/to/ircnotify/socket`
 
 For example, to say "Hello world!" via the bot:
 
