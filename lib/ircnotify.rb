@@ -12,15 +12,17 @@ module IRCNotify
     @bridge.start
   end
 
-  def load_config config_path
-    if not File.exists? config_path
-      STDERR.puts "Error: Can't find config file #{config_path}"
-      STDERR.puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
-      exit false
+  module Config
+    extend self
+    def load config_path
+      if not File.exists? config_path
+        STDERR.puts "Error: Can't find config file #{config_path}"
+        STDERR.puts "Either create it or specify another config file with: #{File.basename $0} [filename]"
+        exit false
+      end
+      module_eval File.read(config_path), File.realpath(config_path)
+      module_eval File.read(File.join(File.dirname($0), "..", "share", "config.schema"))
     end
-    config_wrapper = "module Config\n%s\nend"
-    module_eval config_wrapper % File.read(config_path), File.realpath(config_path), 0
-    module_eval config_wrapper % File.read(File.join(File.dirname($0), "..", "share", "config.schema"))
   end
 
   def log msg, level=:info

@@ -2,5 +2,5 @@
 
 require_relative '../lib/ircnotify'
 
-IRCNotify.load_config(ARGV.shift || File.join(File.dirname($0), "..", "etc", "config"))
+IRCNotify::Config.load(ARGV.shift || File.join(File.dirname($0), "..", "etc", "config"))
 IRCNotify.run
