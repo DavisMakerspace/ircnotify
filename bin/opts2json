@@ -4,7 +4,7 @@ cmds={}
 cmd=nil
 ARGV.each do |arg|
   if arg.start_with? '--'
-    cmd=arg[2..-1].tr! '-','_'
+    cmd = arg[2..-1].tr '-','_'
   else
     j = JSON.parse arg rescue nil
     arg = j.is_a?(Hash) ? j : (Integer(arg) rescue nil || Float(arg) rescue nil || arg)
