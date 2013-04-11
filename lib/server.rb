@@ -29,10 +29,10 @@ module IRCNotify
       @unix_server = nil
       File.delete path
     end
-    def send at, from, cmd
-      trigger, msg = cmd.split ' ', 2
+    def send at, from, msg
+      trigger, body = msg.split ' ', 2
       if trigger
-        @clients.each do |c| c.send at, from, trigger, msg end
+        @clients.each do |c| c.send at, from, trigger, body end
       else
         @bridge.irc_send NAME, "#{VERSION} listening on #{HOST}:#{@unix_server.path}"
       end
