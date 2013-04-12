@@ -30,8 +30,8 @@ module IRCNotify
       @unix_server = nil
       File.delete path
     end
-    def send at, from, msg
-      argv = msg.shellsplit
+    def send at, from, cmd
+      argv = cmd.shellsplit
       if argv.size > 0
         @clients.each do |c| c.send at, from, argv end
       else

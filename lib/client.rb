@@ -8,7 +8,7 @@ module IRCNotify
       @socket = socket
       @peername = Etc.getpwuid(@socket.getpeereid[0]).name
       @name = @peername
-      @triggers = []
+      @commands = []
       @targets = nil
       IRCNotify.log "New connection #{@socket} by #{@peername}"
     end
@@ -33,7 +33,7 @@ module IRCNotify
       @socket = nil
     end
     def send at, from, argv
-      if @triggers.include? argv[0]
+      if @commands.include? argv[0]
         data = {
           at: at.object_id,
           at_name: at.name,
@@ -47,7 +47,7 @@ module IRCNotify
       @name = cmds['set_name'].to_s if cmds['set_name']
       @targets = Array(cmds['set_targets']) if cmds['set_targets']
       targets = cmds['targets'] ? Array(cmds['targets']) : @targets
-      @triggers = Array(cmds['set_triggers']) if cmds['set_triggers']
+      @commands = Array(cmds['set_commands']) if cmds['set_commands']
       if cmds['send'] then @bridge.irc_send @name, cmds['send'], targets end
     end
   end
