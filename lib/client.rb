@@ -32,15 +32,14 @@ module IRCNotify
       IRCNotify.log "Ending connection #{@socket}"
       @socket = nil
     end
-    def send at, from, trigger, body
-      if @triggers.include? trigger
+    def send at, from, argv
+      if @triggers.include? argv[0]
         data = {
           at: at.object_id,
           at_name: at.name,
           from: from.object_id,
           from_name: from.name,
-          trigger: trigger,
-          body: body}
+          argv: argv}
         @socket.write(data.to_json + "\r\n")
       end
     end

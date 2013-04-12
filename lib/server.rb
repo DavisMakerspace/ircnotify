@@ -1,4 +1,5 @@
 require 'socket'
+require 'shellwords'
 require_relative 'client'
 
 module IRCNotify
@@ -30,9 +31,9 @@ module IRCNotify
       File.delete path
     end
     def send at, from, msg
-      trigger, body = msg.split ' ', 2
-      if trigger
-        @clients.each do |c| c.send at, from, trigger, body end
+      argv = msg.shellsplit
+      if argv.size > 0
+        @clients.each do |c| c.send at, from, argv end
       else
         @bridge.irc_send NAME, "#{VERSION} listening on #{HOST}:#{@unix_server.path}"
       end
