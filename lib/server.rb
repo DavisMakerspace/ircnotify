@@ -31,11 +31,16 @@ module IRCNotify
       File.delete path
     end
     def send at, from, cmd
-      argv = cmd.shellsplit
-      if argv.size > 0
-        @clients.each do |c| c.send at, from, argv end
+      begin
+        argv = cmd.shellsplit
+      rescue ArgumentError => error
+        @bridge.irc_send NAME, "#{error}"
       else
-        @bridge.irc_send NAME, "#{VERSION} listening on #{HOST}:#{@unix_server.path}"
+        if argv.size > 0
+          @clients.each do |c| c.send at, from, argv end
+        else
+          @bridge.irc_send NAME, "#{VERSION} listening on #{HOST}:#{@unix_server.path}"
+        end
       end
     end
   end
