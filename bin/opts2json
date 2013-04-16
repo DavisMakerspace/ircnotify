@@ -7,9 +7,13 @@ ARGV.each do |arg|
     cmd = arg[2..-1].tr '-','_'
     cmds[cmd] = [] if not cmds[cmd]
   else
-    j = JSON.parse arg rescue nil
-    arg = j.is_a?(Hash) ? j : (Integer(arg) rescue nil || Float(arg) rescue nil || arg)
-    cmds[cmd] << arg
+    cmds[cmd] << (
+      JSON.parse(arg) rescue nil ||
+      Integer(arg) rescue nil ||
+      Float(arg) rescue nil ||
+      {"true"=>true,"false"=>false}[arg] ||
+      arg
+    )
   end
 end
 cmds.delete nil if cmds[nil] == []
