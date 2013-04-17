@@ -6,11 +6,16 @@ module IRCNotify
     extend self
 
     ISGD_BASE_URI = URI::HTTP::build host:'is.gd', path:'/create.php'
+    SCHEMES = ['http','https']
     @http = Net::HTTP.new ISGD_BASE_URI.host
     @urldb = {}
 
     def replace str
-      str.gsub(URI.regexp ['http','https']) {|url| shorten url}
+      str.gsub(URI.regexp SCHEMES) {|url| shorten url}
+    end
+
+    def replace! str
+      str.gsub!(URI.regexp SCHEMES) {|url| shorten url}
     end
 
     def shorten url

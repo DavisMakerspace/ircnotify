@@ -11,6 +11,7 @@ module IRCNotify
       @name = @peername
       @commands = []
       @targets = nil
+      @shorten_urls = Config::Server::URLSHORTEN
       IRCNotify.log "New connection #{@socket} by #{@peername}"
     end
     def start_read
@@ -46,10 +47,16 @@ module IRCNotify
     end
     def handle_commands cmds
       @name = cmds['set_name'].to_s if cmds['set_name']
+      @commands = Array(cmds['set_commands']) if cmds['set_commands']
       @targets = Array(cmds['set_targets']) if cmds['set_targets']
       targets = cmds['targets'] ? Array(cmds['targets']) : @targets
-      @commands = Array(cmds['set_commands']) if cmds['set_commands']
-      if cmds['send'] then @bridge.irc_send @name, cmds['send'], targets end
+      @shorten_urls = !!cmds['set_shorten_urls'] if cmds['set_shorten_urls']
+      shorten_urls = cmds['shorten_urls'] ? !!cmds['shorten_urls'] : @shorten_urls
+      if cmds['send']
+        send = Array(cmds['send'])
+        if shorten_urls then send.map! {|line| URLShortener::replace! line} end
+        @bridge.irc_send @name, cmds['send'], targets
+      end
     end
   end
 end

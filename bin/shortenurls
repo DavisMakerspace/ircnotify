@@ -1,11 +1,10 @@
 #!/usr/bin/env ruby
 
 require_relative '../lib/ircnotify'
-require_relative '../lib/urlshortener'
 
 IRCNotify::Config.load(File.join(File.dirname($0), "..", "etc", "config"))
 
-STDIN.each do |url|
+$stdin.each do |url|
   url.strip!
   puts IRCNotify::URLShortener::shorten url
 end
