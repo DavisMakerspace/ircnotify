@@ -9,6 +9,10 @@ module IRCNotify
     @http = Net::HTTP.new ISGD_BASE_URI.host
     @urldb = {}
 
+    def replace str
+      str.gsub(URI.regexp ['http','https']) {|url| shorten url}
+    end
+
     def shorten url
       if url.length < Config::Server::URLMAXLEN
         url
