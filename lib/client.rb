@@ -1,5 +1,6 @@
 require 'json'
 require 'etc'
+require_relative 'urlshortener'
 
 module IRCNotify
   class Client
