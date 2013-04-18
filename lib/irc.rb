@@ -36,7 +36,12 @@ module IRCNotify
       else
         targets = @bot.channels
       end
-      Array(msg).each {|m| targets.each {|t| t.send (Config::IRC::MSGFORMAT % {src: src, msg: m})}}
+      targets.each do |t|
+        maxlength = 510 - ': '.length - @bot.mask.to_s.length
+        Array(msg).each do |m|
+          @bot.irc.send ("PRIVMSG #{t.name} :" + (Config::IRC::MSGFORMAT % {src: src, msg: m}))[0,maxlength]
+        end
+      end
     end
     def get_target id
       @known_targets[id]
