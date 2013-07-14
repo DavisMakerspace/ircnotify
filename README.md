@@ -2,6 +2,8 @@
 
 `ircnotify` is a basic daemon for communicating between an IRC bot and the outside world via a socket.
 
+## Examples
+
 The following assume that `SOCKET=/path/to/ircnotify/socket`
 
 For example, to say "Hello world!" via the bot and `socat`:
@@ -68,3 +70,15 @@ Alternatively, you can use a coproc:
     )
 
 Of course, there is no reason you must use bash.  As long as your environment of choice can connect to a socket and produce and parse json, you are good to go.
+
+## JSON Commands
+
+The following commands are recognized in the JSON string:
+
+* `set_name`: (string) Set the name of this client.
+* `set_commands`: (array of strings) Register command names for this client to respond to.
+* `set_targets`: (array of strings) Set targets for this and future messages.
+* `targets`: (array of strings) Send the current message to the given targets.
+* `set_shorten_urls`: (boolean) Shorten any urls in this or future messages.
+* `shorten_urls`: (boolean) Shorten any urls in the current message.
+* `send`: (string, array of strings) Send the given string(s) as separate messages to the set targets.
