@@ -31,11 +31,11 @@ module IRCNotify
     def send src, msg, target_ids
       if target_ids
         targets = target_ids.map {|tid| @known_targets[tid] || @bot.user_list.find(tid) || @bot.channel_list.find(tid)}
-        targets.uniq!
         targets.keep_if {|t| t && (@bot.channels.index(t) || @bot.channels.index {|c| c.has_user?(t)})}
       else
         targets = @bot.channels
       end
+      targets.uniq!
       targets.each do |t|
         maxlength = 510 - ': '.length - @bot.mask.to_s.length
         Array(msg).each do |m|
