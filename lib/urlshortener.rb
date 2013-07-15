@@ -26,7 +26,7 @@ module IRCNotify
       else
         isgd_uri = ISGD_BASE_URI
         isgd_uri.query = URI.encode_www_form format:'json', url:url
-        http_response = @http.request Net::HTTP::Get.new isgd_uri
+        http_response = Net::HTTP.get_response isgd_uri
         if (http_response.is_a? Net::HTTPSuccess) && short = (JSON.parse http_response.body)['shorturl']
           @urldb[url] = short
         else
