@@ -14,14 +14,16 @@ module IRCNotify
         c.port = Config::IRC::PORT
         c.channels = Config::IRC::CHANNELS
       end
-      @bot.on :connect, //, self do |m, irc| irc.connected end
-      @bot.on :private, //, self do |m, irc| if m.command == "PRIVMSG" then irc.received m, m.message end end
-      if Config::IRC::CMDPREFIX
-        @bot.on :channel, /^#{Config::IRC::CMDPREFIX} *(.*)/, self do |m, irc, cmd| irc.received m, cmd end
+      @bot.on :private, //, self do |m, irc|
+        irc.received m, m.params[1] if m.command == "PRIVMSG"
       end
+      @bot.on :channel, //, self do |m, irc| irc.scan m end
     end
-    def connected
-      @bot.on :channel, /^#{@bot.nick}(?:[:, ] *(.*)|$)/, self do |m, irc, cmd| irc.received m, cmd end
+    def scan msg
+      cmd = nil
+      /^#{@bot.nick}(?:[:, ] *(?<cmd>.*)|$)/.match(msg.params[1]) {|m| cmd=m[:cmd]}
+      /^#{Config::IRC::CMDPREFIX} *(?<cmd>.*)$/.match(msg.params[1]) {|m| cmd=m[:cmd]} if Config::IRC::CMDPREFIX
+      self.received msg, cmd if cmd
     end
     def received msg, cmd
       @known_targets[msg.target.object_id] = msg.target
