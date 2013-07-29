@@ -9,18 +9,19 @@ module IRCNotify
       if File.socket? Config::Server::PATH then File.delete Config::Server::PATH end
       @unix_server = UNIXServer.new Config::Server::PATH
       @clients = []
+      @mutex = Mutex.new
     end
     def start
       while socket = @unix_server.accept do
         client = Client.new @bridge, socket
         Thread.new do
-          @clients << client
+          @mutex.syncronize { @clients << client }
           begin
             client.start_read
           rescue StandardError => error
             IRCNotify.log "Client error: #{error}", :error
           end
-          @clients.delete client
+          @mutex.syncronize { @clients.delete client }
         end
       end
     end
