@@ -16,7 +16,8 @@ module IRCNotify
     end
     def start_read
       @socket.each do |line|
-        IRCNotify.log "Client #{@socket} got: #{line.strip}", :debug
+        line.chomp!
+        IRCNotify.log "Client #{@socket} got: #{line}", :debug
         cmds = {}
         if line.start_with? "{"
           begin
@@ -27,7 +28,7 @@ module IRCNotify
             cmds = {}
           end
         else
-          cmds['send'] = line.strip
+          cmds['send'] = line
         end
         handle_commands cmds
       end
