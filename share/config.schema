@@ -5,6 +5,7 @@ module IRC
   CHANNELS ||= []
   CMDPREFIX ||= "!"
   MSGFORMAT ||= "%{src} :: %{msg}"
+  MESG_PER_SECOND ||= 0.7
 end
 module Server
   PATH ||= "/run/ircnotify/#{IRC::NICK}"

@@ -13,6 +13,7 @@ module IRCNotify
         c.server = Config::IRC::SERVER
         c.port = Config::IRC::PORT
         c.channels = Config::IRC::CHANNELS
+        c.messages_per_second = Config::IRC::MESG_PER_SECOND
       end
       @bot.on :private, //, self do |m, irc|
         irc.received m, m.params[1] if m.command == "PRIVMSG"
