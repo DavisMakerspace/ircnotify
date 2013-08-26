@@ -15,12 +15,14 @@ module IRCNotify
       while socket = @unix_server.accept do
         client = Client.new @bridge, socket
         Thread.new do
+          IRCNotify.log "Adding client #{client}"
           @mutex.synchronize { @clients << client }
           begin
             client.start_read
-          rescue StandardError => error
+          rescue => error
             IRCNotify.log "Client error: #{error}", :error
           end
+          IRCNotify.log "Removing client #{client}"
           @mutex.synchronize { @clients.delete client }
         end
       end
