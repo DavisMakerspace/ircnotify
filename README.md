@@ -2,6 +2,13 @@
 
 `ircnotify` is a basic daemon for communicating between an IRC bot and the outside world via a socket.
 
+## Install
+
+To install for deployment, you can do:
+
+    RUBY=/path/to/ruby
+    $RUBY/bin/bundle install --deployment
+
 ## Examples
 
 The following assume that `SOCKET=/path/to/ircnotify/socket`
