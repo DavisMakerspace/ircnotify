@@ -6,32 +6,36 @@ module IRCNotify
   class Server
     def initialize bridge
       @bridge = bridge
-      if File.socket? Config::Server::PATH then File.delete Config::Server::PATH end
-      @unix_server = UNIXServer.new Config::Server::PATH
+      @unix_server = nil
       @clients = []
       @mutex = Mutex.new
     end
     def start
-      while socket = @unix_server.accept do
-        client = Client.new @bridge, socket
-        Thread.new do
-          IRCNotify.log "Adding client #{client}"
-          @mutex.synchronize { @clients << client }
-          begin
-            client.start_read
-          rescue => error
-            IRCNotify.log "Client error: #{error}", :error
+      return if @unix_server
+      begin
+        @unix_server = UNIXServer.new Config::Server::PATH
+        while socket = @unix_server.accept do
+          client = Client.new @bridge, socket
+          Thread.new do
+            IRCNotify.log "Adding client #{client}"
+            @mutex.synchronize { @clients << client }
+            begin
+              client.start_read
+            rescue => error
+              IRCNotify.log "Client error: #{error}", :error
+            end
+            IRCNotify.log "Removing client #{client}"
+            @mutex.synchronize { @clients.delete client }
           end
-          IRCNotify.log "Removing client #{client}"
-          @mutex.synchronize { @clients.delete client }
         end
+      ensure
+        File.delete Config::Server::PATH
+        @unix_server = nil
       end
     end
     def stop
-      path = @unix_server.path
+      return if !@unix_server
       @unix_server.shutdown
-      @unix_server = nil
-      File.delete path
     end
     def send at, from, cmd
       begin
