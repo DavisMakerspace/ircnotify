@@ -9,6 +9,7 @@ module IRC
 end
 module Server
   PATH ||= "/run/ircnotify/#{IRC::NICK}"
+  MODE ||= nil
   URLSHORTEN ||= false
   URLMAXLEN ||= 20
 end
