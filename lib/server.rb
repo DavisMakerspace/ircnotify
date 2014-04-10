@@ -16,8 +16,7 @@ module IRCNotify
         @unix_server = UNIXServer.new Config::Server::PATH
         File.chmod(Config::Server::MODE, Config::Server::PATH) if Config::Server::MODE
         while socket = @unix_server.accept do
-          client = Client.new @bridge, socket
-          Thread.new do
+          Thread.new(Client.new(@bridge,socket)) do |client|
             IRCNotify.log "Adding client #{client}"
             @mutex.synchronize { @clients << client }
             begin
