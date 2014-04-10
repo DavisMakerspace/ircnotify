@@ -44,7 +44,7 @@ module IRCNotify
         @bridge.irc_send NAME, "#{error}"
       else
         if argv.size > 0
-          @clients.each do |c| c.send at, from, argv end
+          @mutex.synchronize{ @clients.each{|c|c.send(at,from,argv)} }
         else
           @bridge.irc_send NAME, "#{VERSION} listening on #{HOST}:#{@unix_server.path}"
         end
