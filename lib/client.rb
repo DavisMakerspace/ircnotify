@@ -7,6 +7,7 @@ module IRCNotify
     def initialize bridge, socket
       @bridge = bridge
       @socket = socket
+      @socket_mutex = Mutex.new
       @peername = Etc.getpwuid(@socket.getpeereid[0]).name
       @name = @peername
       @commands = []
@@ -33,7 +34,7 @@ module IRCNotify
         handle_commands cmds
       end
       IRCNotify.log "Ending connection #{@socket}"
-      @socket = nil
+      @socket_mutex.synchronize{ @socket = nil }
     end
     def send at, from, argv
       if @commands.include? argv[0]
@@ -43,7 +44,7 @@ module IRCNotify
           from: from.object_id,
           from_name: from.name,
           argv: argv}
-        @socket.write(data.to_json + "\r\n")
+        @socket_mutex.synchronize{ @socket.write(data.to_json + "\r\n") if @socket }
       end
     end
     def handle_commands cmds
